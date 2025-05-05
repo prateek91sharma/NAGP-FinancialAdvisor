@@ -1,13 +1,35 @@
 const files = require('./files');
 const moment = require('moment');
+const utils = require('../utils');
+
 
 const invalidTransactionDuration = `Invalid Duration provided.\n`
 const invalidTransactionDurationFutureDate = `Future Date Provided.\n`
 
 const provideTransactionsDuration = `Kindly provide a time period.`;
 const durationSuggestions =['Current Financial Year', 'Previous Financial Year'];
+const noPastTransactionFoundMsg = `No past transactions found.\n`;
+const promptForMoreInvestment = `Do you want to invest more?`;
 function setupTransactionManagerIntents(intentMap) {
     intentMap.set('Transaction_Period_Entered', validateDurationAndRespond);
+    intentMap.set('Transaction_Display_Invest_More', handleMoreInvestmentUserInput);
+}
+
+function handleMoreInvestmentUserInput(agent){
+    const phone = agent.context.get('transactions_flow_invest_more')?.parameters?.phone;
+    const confirmation = agent.parameters.confirmation;
+    if(confirmation === 'yes'){
+        agent.clearContext('transactions_flow_invest_more');
+        agent.setFollowupEvent({name: 'TRANSACTIONS_FOLLOWUP_EXPORE_FUNDS',
+          parameters: {'value': phone}});
+      } else if (confirmation === 'no'){
+        agent.add(`Thank you for using our services`);
+        agent.clearOutgoingContexts();
+        agent.end('Goodbye!');
+      } else {
+        agent.add(`Invalid response!!. Please reply with Yes or No.`);
+        utils.carryForwardSameContext(agent, 'transactions_flow_invest_more');
+      }
 }
 
 function validateDurationAndRespond(agent) {
@@ -38,10 +60,22 @@ function validateDurationAndRespond(agent) {
         }
     }
     if(transactions.length === 0){
-        // promopt for no transation and start investing
-    } else{
-        //rich table response to show 3 transations
+        agent.add(noPastTransactionFoundMsg + promptForMoreInvestment);
+    } else {
+        agent.add(new Table({
+            title: 'Transactions list',
+            columns: [
+                { header: 'Date' },
+                { header: 'Portfolio' },
+                { header: 'Amount' }
+            ],
+            rows: transactions.splice(0, 3).map(fund => ({
+                cells: [fund.date, fund.portfolio_no, fund.amount],
+            }))
+        }));
+        agent.add(promptForMoreInvestment);
     }
+    utils.carryForwardDifferentContext('transactions_flow_started', 'transactions_flow_invest_more');
 }
 
 

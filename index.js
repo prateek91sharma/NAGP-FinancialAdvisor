@@ -75,6 +75,7 @@ function validateContactInfoAndPrompt(agent){
   const phone = agent.parameters.phone;
   if (typeof phone === 'number' && phone.toString().length==10) {
     const service = agent.context.get('contact_info_asked')?.parameters?.service;
+    const fundName = agent.context.get('contact_info_asked')?.parameters?.fundName;
     if(service === 'Portfolio Valuation'){
       const folios =files.getFolioList(phone);
       if(folios.length === 0){
@@ -86,6 +87,9 @@ function validateContactInfoAndPrompt(agent){
       }
     } else if (service === 'Transaction History'){
       transactions.promptForTimePeriod(agent, phone);
+    } else if(fundName){
+      agent.setFollowupEvent({name: 'FUND_PHONE_RECEIVED',
+        parameters: {'fundName': fundName, 'phone': phone}});
     } else{
       agent.add("Internal Error!! Service Not found. Just for debugging");
     }
@@ -96,11 +100,12 @@ function validateContactInfoAndPrompt(agent){
     agent.setContext({name: "contact_info_asked", parameters:{'service': service}});
   }
 }
-
+// Will be redirected using this event FUND_EXPLORER_MISSING_PHONE_NO
 function askContactInfo(agent) {
   const service = agent.parameters.service;
+  const fundName = agent.parameters.fundName;
   agent.add(getMobileNumberPrompt);
-  agent.setContext({name: "contact_info_asked", parameters:{'service': service}});
+  agent.setContext({name: "contact_info_asked", parameters:{'service': service, 'fundName': fundName}});
 }
 
 const port = process.env.PORT || 3000;

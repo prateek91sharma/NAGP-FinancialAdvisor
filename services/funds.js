@@ -24,7 +24,7 @@ function setupFundsIntents(intentMap) {
     intentMap.set('Selected_Fund_Details_Fallback', showSelectedFundDetailsFallback);
     intentMap.set('Go_Back_To_Categories_Menu', fundsExplorerServiceSelected);
     intentMap.set('Is_Phone_Number_Provided', isPhoneNumberProvided);
-    intentMap.set('Fund_Amount_Displayed', fundAmountDiplayed);
+    // intentMap.set('Fund_Amount_Displayed', fundAmountDiplayed);
     intentMap.set('Fund_Amount_Entered', fundAmountValidation);
 
 
@@ -51,12 +51,16 @@ function addAmountQuickSuggestionsWithError(agent){
       });
     utils.carryForwardSameContext(agent, "phone-number-provided");
 }
+// Will be redirected using this event FUND_PHONE_RECEIVED
 function isPhoneNumberProvided(agent) {
-    const phoneNumber = agent.context.get('phone-number-provided')?.parameters?.value || agent.context.get('funds_amount_displayed')?.parameters?.phoneNumber ;
-    const fundName = agent.context.get('fund_details_shown')?.parameters?.fundName || agent.context.get('funds_amount_displayed')?.parameters?.fundName ;
+    const phoneNumber = agent.context.get('phone-number-provided')?.parameters?.value || agent.parameters?.phone;//|| agent.context.get('funds_amount_displayed')?.parameters?.phoneNumber ;
+    const fundName = agent.context.get('fund_details_shown')?.parameters?.fundName || agent.parameters?.fundName;//|| agent.context.get('funds_amount_displayed')?.parameters?.fundName ;
     if (phoneNumber){
         addAmountQuickSuggestions(agent);
-        agent.setContext({'name' : 'funds_amount_displayed', 'parameters': {'phoneNumber':phoneNumber, 'fundName': fundName}});
+        agent.setContext({'name' : 'funds_amount_displayed', 'lifespan': 1, 'parameters': {'phoneNumber':phoneNumber, 'fundName': fundName}});
+    } else{
+        agent.setFollowupEvent({name: 'FUND_EXPLORER_MISSING_PHONE_NO',
+          parameters: {'fundName': fundName}});
     }
 }
 function addAmountQuickSuggestions(agent){
@@ -66,6 +70,8 @@ function addAmountQuickSuggestions(agent){
       });
     utils.carryForwardSameContext(agent, "phone-number-provided");
 }
+//Also redirected using TRANSACTIONS_FOLLOWUP_EXPORE_FUNDS and NO_PORTFOLIO_EXPORE_FUNDS
+// both pass phone number in value param
 function fundsExplorerServiceSelected(agent) {
     const { value } = agent.parameters?.value;
     agent.add(fundCategorySelectMsg());
