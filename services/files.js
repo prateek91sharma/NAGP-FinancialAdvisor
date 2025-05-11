@@ -1,7 +1,7 @@
 const fs = require('fs');
 const path = require('path');
 const moment = require('moment');
-const filePath = path.resolve(__dirname, './static_data/transactionhistory.json');
+const filePath = path.resolve(__dirname, '../static_data/transactionhistory.json');
 const currentFYStart = moment('2025-04-01');
 const lastFYStart = moment('2024-04-01');
 
@@ -11,7 +11,7 @@ function getTransactionByDateRange(mobileNo, type, startDate, endDate) {
     var end;
     if (type === 'current') {
         start = currentFYStart;
-        end = moment();
+        end = moment().add(1, 'day');
     } else if (type === 'previous') {
         start = lastFYStart;
         end = currentFYStart.subtract(1, 'day');
@@ -19,12 +19,13 @@ function getTransactionByDateRange(mobileNo, type, startDate, endDate) {
         start = startDate;
         end = endDate;
     }
+    console.log('Dates used for filtering transactions internally', start, end);
     return data.filter(user => user.mobile === mobileNo)
         .flatMap(o => o.transactions)
         .filter(o => {
             var date = moment(o.date);
             return date.isSameOrAfter(start) && date.isSameOrBefore(end);
-        }).sort((o1,o2)=>moment(o2.date).diff(moment(o1.date)));
+        }).sort((o1, o2) => moment(o2.date).diff(moment(o1.date)));
 }
 
 function getFolioDetails(folioNumber, mobileNo) {
@@ -56,7 +57,7 @@ function addTransaction(transaction, mobileNo) {
     const fileContent = fs.readFileSync(filePath, 'utf8');
     let jsonData = JSON.parse(fileContent);
 
-    const index = jsonData.findIndex(obj => obj.mobile === mobileNo);
+    const index = jsonData.findIndex(obj => obj.mobile === mobileNo.toString());
     const date = moment().format("YYYY-MM-DD");
     let transactionToInsert = { ...transaction, date };
     if (index !== -1) {
@@ -100,11 +101,10 @@ function writeToFile(data) {
     console.log('Data written to file.');
 }
 
-
 module.exports = {
     addTransaction,
     getFolioList,
     getFolioDetails,
     getTransactionByDateRange,
-    getTransactionsByPortfolio 
+    getTransactionsByPortfolio
 }
