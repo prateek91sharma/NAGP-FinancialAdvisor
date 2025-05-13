@@ -47,6 +47,105 @@
         "fund_name": "Alpha Growth Fund",
         "date": "2025-05-10",
         "portfolio_no": "AGF584986/59"
+      },
+      {
+        "amount": 4000,
+        "fund_name": "Alpha Growth Fund",
+        "date": "2025-05-11",
+        "portfolio_no": "AGF584986/59"
+      },
+      {
+        "amount": 3000,
+        "fund_name": "Alpha Growth Fund",
+        "date": "2025-05-11",
+        "portfolio_no": "AGF584986/59"
+      },
+      {
+        "amount": 4000,
+        "fund_name": "Alpha Growth Fund",
+        "date": "2025-05-11",
+        "portfolio_no": "AGF584986/59"
+      },
+      {
+        "amount": 49999,
+        "fund_name": "Alpha Growth Fund",
+        "date": "2025-05-11",
+        "portfolio_no": "AGF584986/59"
+      },
+      {
+        "amount": 2000,
+        "fund_name": "Alpha Growth Fund",
+        "date": "2025-05-11",
+        "portfolio_no": "AGF584986/59"
+      },
+      {
+        "amount": 4000,
+        "fund_name": "Delta Tax Saver Fund",
+        "date": "2025-05-12",
+        "portfolio_no": "DTSF876983/50"
+      },
+      {
+        "amount": 3000,
+        "fund_name": "Beta Income Fund",
+        "date": "2025-05-13",
+        "portfolio_no": "BIF786649/89"
+      },
+      {
+        "amount": 5000,
+        "fund_name": "Beta Income Fund",
+        "date": "2025-05-13",
+        "portfolio_no": "BIF786649/89"
+      },
+      {
+        "amount": 4000,
+        "fund_name": "Beta Income Fund",
+        "date": "2025-05-13",
+        "portfolio_no": "BIF786649/89"
+      }
+    ]
+  },
+  {
+    "mobile": "9653425678",
+    "transactions": [
+      {
+        "amount": 5000,
+        "fund_name": "Omega Liquid Fund",
+        "date": "2025-05-13",
+        "portfolio_no": "OLF937387/42"
+      },
+      {
+        "amount": 3000,
+        "fund_name": "Alpha Growth Fund",
+        "date": "2025-05-13",
+        "portfolio_no": "AGF310856/53"
+      }
+    ]
+  },
+  {
+    "mobile": "9765435678",
+    "transactions": [
+      {
+        "amount": 2000,
+        "fund_name": "Delta Tax Saver Fund",
+        "date": "2025-05-13",
+        "portfolio_no": "DTSF602920/67"
+      }
+    ]
+  },
+  {
+    "mobile": "6523456734",
+    "transactions": [
+      {
+        "amount": 3000,
+        "fund_name": "Beta Income Fund",
+        "date": "2025-05-13",
+        "portfolio_no": "BIF105638/88"
+      },
+      {
+        "amount": 3000,
+        "fund_name": "Gamma Balanced Fund",
+        "date": "2025-05-13",
+        "portfolio_no": "G336497/98"
       }
     ]
   }

@@ -4,18 +4,21 @@ const files = require('./services/files');
 const utils = require('./utils');
 const portfolio = require('./services/portfolio');
 const transactions = require('./services/transactions');
+const retryMsg = 'I didn\'t understand. Can you try again?';
 
 
 const app = express();
 const funds = require('./services/funds');
 
-const serviceSelectionMsg = `Hi, welcome to ABC Mutual Fund Services. What service would you like to use?
+const serviceSelectionMSG = `Hi, welcome to ABC Mutual Fund Services. What service would you like to use?
                 Quick Suggestions:\n
                 - Portfolio Valuation\n
                 - Explore Funds\n
                 - Transaction History\n`;
-const getMobileNumberPrompt = `Kindly enter registered contact number.`;
+const getMobileNumberPrompt = `Kindly enter registered mobile number.`;
+const getMobileNumberHtml = `Kindly enter <b>registered mobile number</b>.`;
 const contactNumberValidationMsg = `Invalid number!!\n`;
+const contactNumberValidationMsgHtml = `<b>Invalid number!!</b>\n`;
 const portfolioBlankMsg = `You haven't purchased any funds yet\n Would you like to start exploring funds?\n`;
 
 
@@ -23,45 +26,85 @@ app.use(express.json());
 
 app.post('/webhook', express.json(), (req, res) => {
   const agent = new WebhookClient({ request: req, response: res });
-  function serviceSelection(agent) {
-    // agent.add(serviceSelectionMsg);
-    // serviceSelectionMsgTelegram(agent);
-    serviceSelectionMsgHtmlTest(agent);
-    agent.context.set({name: 'services_displayed', lifespan: 1});
-  }
-
-  function serviceSelectionFallback(agent) {
-    agent.add('I didn\'t understand. Can you try again?\n' + serviceSelectionMsg);
-  }
-
-  function serviceSelectionMsgTelegram(agent){
-      agent.add(`Hi, welcome to ABC Mutual Fund Services. What service would you like to use?`);
-      agent.add(`Portfolio Valuation`);
-      agent.add(`Explore Funds`);
-      agent.add(`Transaction History`);
-  }
-  function serviceSelectionMsgHtmlTest(agent) {
-    utils.renderAsTelegramHTMLPayload(agent, `<b>Your Recent Transactions</b>\n<pre>Date       | Portfolio      | Amount \n-------------------------------------\n2025-05-10 | AGF584986/59   | 912388  \n2025-05-10 | AGF584986/59   | 500     </pre>\n<b>Do you want to invest more?</b>`
-    ,['Yes','No']);
-  }
-
-  function fallback(agent) {
-    agent.add('I didn\'t understand. Can you try again?');
-  }
-
   let intentMap = new Map();
   intentMap.set('Service Selection', serviceSelection);
   intentMap.set('Service Selection - fallback', serviceSelectionFallback);
-  intentMap.set('Default Fallback Intent', fallback);
   intentMap.set('Portfolio_OR_Transaction_Selected', askContactInfo);
+  intentMap.set('Portfolio_OR_Transaction_Selected - fallback', askContactInfoFallback);
   intentMap.set('Enter_Contact_Details', validateContactInfoAndPrompt);
   intentMap.set('Explore_Funds_Confirmation', handleNoPortfolioUserResponse);
+  intentMap.set('Default Fallback Intent', handleGracefulFallback);
+  intentMap.set('Exit Conversation', handleGraceFulExit);
+  intentMap.set('Fallback_Navigation', fallbackNavigation);
   funds.setupFundsIntents(intentMap);
   portfolio.setupFolioIntents(intentMap);
   transactions.setupTransactionManagerIntents(intentMap);
   agent.handleRequest(intentMap);
 });
+function fallbackNavigation(agent){
+  console.log("Inside Fallback_Navigation Intent callback");
+  const confirmation = agent.parameters?.confirmation;
+  if(confirmation === 'yes'){
+    agent.add('');
+    agent.setFollowupEvent({
+      name: 'MANUAL_WELCOME',
+      languageCode: 'en'
+    });
+  }
+  else if(confirmation === 'no') {
+    agent.add('Thanks for using our services.');
+    agent.end('Goodbye!!');
+  } else{
+    agent.add('');
+    agent.setFollowupEvent({
+      name: 'MANUAL_FALLBACK'
+    });
+  }
+}
+function handleGracefulFallback(agent){
+  console.log("Inside Default Fallback Intent callback");
+  handleGracefulFallbackMsg(agent);
+}
+function handleGracefulFallbackMsg(agent) {
+  //agent.add(retryMsg);
+  handleGracefulFallbackTelegramMsg(agent);
+}
+function handleGracefulFallbackTelegramMsg(agent){
+  utils.createTelegramSuggestionFromList(agent, `I am not able to understand the conversation.\nWould you like to start from the service selection?`,['Yes', 'No']);
+    agent.context.set({name: 'fallback_reached', lifespan: 1});
+}
+function handleGraceFulExit(agent){
+  console.log("Inside Exit Conversation callback!");
+  utils.clearAllContexts(agent);
+  agent.add('Thanks for using our services.Goodbye!!');
+}
+function serviceSelection(agent) {
+  serviceSelectionMsg(agent);
+  // serviceSelectionMsgHtmlTest(agent);
+  agent.context.set({name: 'services_displayed', lifespan: 1});
+}
 
+function serviceSelectionMsg(agent, error) {
+  //serviceSelectionDialogFlowMsg(agent, error)
+  serviceSelectionTelegramMsg(agent, error);
+}
+function serviceSelectionDialogFlowMsg(agent, error) {
+  agent.add(error? retryMsg + serviceSelectionMSG: serviceSelectionMSG);
+}
+function serviceSelectionTelegramMsg(agent, error) {
+  const errorMsg = error ? retryMsg : '';
+  utils.createTelegramSuggestionFromList(agent, 'Hi, welcome to ABC Mutual Fund Services. What service would you like to use?',
+    ['Portfolio Valuation', 'Explore Funds', 'Transaction History'], errorMsg
+  )
+}
+function serviceSelectionFallback(agent) {
+  serviceSelectionMsg(agent, true);
+}
+
+function serviceSelectionMsgHtmlTest(agent) {
+  utils.renderAsTelegramPayload(agent, `<b>Your Recent Transactions</b>\n<pre>Date       | Portfolio      | Amount \n-------------------------------------\n2025-05-10 | AGF584986/59   | 912388  \n2025-05-10 | AGF584986/59   | 500     </pre>\n<b>Do you want to invest more?</b>`
+  ,['Yes','No']);
+}
 
 function handleNoPortfolioUserResponse(agent) {
   const confirmation = agent.parameters.confirmation;
@@ -117,9 +160,8 @@ function validateContactInfoAndPrompt(agent) {
     } else {
       agent.add("Internal Error!! Service Not found. Just for debugging");
     }
-
   } else {
-    agent.add(contactNumberValidationMsg + getMobileNumberPrompt);
+    askContactInfoMsg(agent, true);
     agent.context.set({ name: "contact_info_asked", lifespan: 2, 
       parameters: { 'service': service, 'fundName': fundName } });
   }
@@ -128,13 +170,33 @@ function validateContactInfoAndPrompt(agent) {
 function askContactInfo(agent) {  
   const service = agent.parameters.service;
   const fundName = agent.parameters.fundName;
-  console.log('Inside Portfolio_OR_Transaction_Selected callback', service, fundName)
-  agent.add(getMobileNumberPrompt);
+  console.log('Inside Portfolio_OR_Transaction_Selected callback', service, fundName);
+  askContactInfoMsg(agent);
   agent.context.set({
     name: "contact_info_asked", 
     lifespan: 2,
     parameters: { 'service': service, 'fundName': fundName }
   });
+}
+
+function askContactInfoFallback(agent){
+  console.log('Inside Portfolio_OR_Transaction_Selected Fallback callback');
+  askContactInfoMsg(agent, true);
+  utils.carryForwardSameContext(agent, 'contact_info_asked');
+}
+
+function askContactInfoMsg(agent, error){
+  //askContactInfoDialogFlowMsg(agent);
+  askContactInfoTelegramMsg(agent, error);
+}
+
+function askContactInfoDialogFlowMsg(agent, error){
+  agent.add(error? contactNumberValidationMsg + getMobileNumberPrompt: getMobileNumberPrompt);
+}
+
+function askContactInfoTelegramMsg(agent, error){
+  const msg =error?contactNumberValidationMsgHtml + getMobileNumberHtml: getMobileNumberHtml;
+  utils.renderAsTelegramPayload(agent,msg);
 }
 
 const port = process.env.PORT || 3000;

@@ -2,8 +2,8 @@ const files = require('./files');
 const moment = require('moment');
 const utils = require('../utils');
 
-const invalidTransactionDuration = `Invalid Duration provided.\n`
-const invalidTransactionDurationFutureDate = `Future Date Provided.\n`
+const invalidTransactionDuration = `Invalid Duration provided.`
+const invalidTransactionDurationFutureDate = `Future Date Provided.`
 
 const provideTransactionsDuration = `Kindly provide a time period.`;
 const durationSuggestions = ['Current Financial Year', 'Previous Financial Year'];
@@ -77,15 +77,38 @@ function validateDurationAndRespond(agent) {
     utils.carryForwardDifferentContext(agent, 'transactions_flow_started', 'transactions_flow_invest_more');
 }
 
+function noTransactionsMsg(agent) {
+    //noTransactionsDialogFlowMsg(agent);
+    noTransactionsTelegramMsg(agent);
+}
+
+function noTransactionsDialogFlowMsg(agent) {
+    agent.add(noPastTransactionFoundMsg + promptForMoreInvestment);
+}
+function noTransactionsTelegramMsg(agent) {
+    utils.renderAsTelegramPayload(agent, `<b>${noPastTransactionFoundMsg}</b>${promptForMoreInvestment}`, ['Yes', 'No'])
+}
 
 function promptForTimePeriod(agent, phone, errorMsg) {
-    const msg = errorMsg ? errorMsg + provideTransactionsDuration : provideTransactionsDuration;
     agent.context.delete('contact_info_asked');
-    agent.add(msg);
-    utils.createSuggestionFromList(agent, durationSuggestions);
+    promptForTimePeriodMsg(agent, errorMsg);
     agent.context.set({ name: "transactions_flow_started", lifespan: 1, parameters: { 'phone': phone } });
 }
 
+function promptForTimePeriodMsg(agent, errorMsg){
+    // promptForTimePeriodDialogFlowMsg(agent, errorMsg);
+    promptForTimePeriodTelegramMsg(agent, errorMsg);
+}
+
+function promptForTimePeriodDialogFlowMsg(agent, errorMsg) {
+    const msg = errorMsg ? errorMsg+'\n' + provideTransactionsDuration : provideTransactionsDuration;
+    agent.add(msg);
+    utils.createSuggestionFromList(agent, durationSuggestions);
+}
+
+function promptForTimePeriodTelegramMsg(agent, errorMsg){
+    utils.createTelegramSuggestionFromList(agent,provideTransactionsDuration, durationSuggestions, errorMsg)
+}
 function showTransactionsAsTable(agent){
     agent.add(new Table({
         title: 'Transactions list',
@@ -105,9 +128,9 @@ function showTransactionsAsTelegramPayload(agent, transactions) {
     const rows = transactions.splice(0, 3).map(tx =>
         `${tx.date.padEnd(10)} | ${tx.portfolio_no.padEnd(14)} | ${tx.amount.toString().padEnd(8)}`
     ).join('\n');
-    const tableMessage =  `<b>Your Recent Transactions</b>\n<pre>${header}${rows}</pre>\n<b>${promptForMoreInvestment}</b>`;
+    const tableMessage =  `<b>Your Transactions</b>\n<pre>${header}${rows}</pre>\n<b>${promptForMoreInvestment}</b>`;
     console.log('tableMessage', tableMessage)
-    utils.renderAsTelegramHTMLPayload(agent, tableMessage,['Yes','No']);
+    utils.renderAsTelegramPayload(agent, tableMessage,['Yes','No']);
 }
 
 function customTelegramRichResponse(agent, res) {

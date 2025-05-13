@@ -29,23 +29,28 @@ function clearAllContexts(agent){
     console.log('All contexts cleared.');
 }
 
-function renderAsTelegramHTMLPayload(agent, htmlContent, replies) {
+function renderAsTelegramPayload(agent, htmlContent, replies, type) {
     var telegramPayload = {
         telegram: {
             text: htmlContent,
-            parse_mode: 'HTML'/* ,
-            reply_markup: {
-                keyboard: [['Yes'], ['No']],
-                resize_keyboard: true,
-                one_time_keyboard: true
-            } */
+            parse_mode: type ? type : 'HTML'
         }
     };
     if (replies && replies.length !== 0) {
         const replyMarkup = {
             keyboard: replies.map(o => Array.of(o)),
             resize_keyboard: true,
-            // one_time_keyboard: true
+            one_time_keyboard: true,
+            is_persistent: true,
+            input_field_placeholder: 'Click icon on right for options'
+        }
+        telegramPayload.telegram = {
+            ...telegramPayload.telegram,
+            reply_markup: replyMarkup
+        };
+    } else {
+        const replyMarkup = {
+            remove_keyboard: true
         }
         telegramPayload.telegram = {
             ...telegramPayload.telegram,
@@ -55,10 +60,22 @@ function renderAsTelegramHTMLPayload(agent, htmlContent, replies) {
     agent.add(new Payload(agent.TELEGRAM, telegramPayload, { rawPayload: true, sendAsMessage: true }));
 }
 
+function createTelegramSuggestionFromList(agent, header, list, errorMsg){
+    const errorMsgHtml= errorMsg? `_${errorMsg}_\n\n`:'';
+    renderAsTelegramPayload(agent, `${errorMsgHtml}*${header}*\n`+list.map((o) => `\u2022 `+ o).join("\n")+ `\nChoose an item\n`, list, 'Markdown');
+}
+
+function createTelegramListWithFreeTextSupport(agent, header, list, errorMsg){
+    const errorMsgHtml= errorMsg? `_${errorMsg}_\n\n`:'';
+    renderAsTelegramPayload(agent, `${errorMsgHtml}*${header}*\n`+list.map((o) => `\u2022 `+ o).join("\n")+ `\nEnter amount or choose from list\n`, list, 'Markdown');
+}
+
 module.exports = {
-    renderAsTelegramHTMLPayload,
+    renderAsTelegramPayload,
     carryForwardSameContext,
     carryForwardDifferentContext,
     createSuggestionFromList,
-    clearAllContexts
+    clearAllContexts,
+    createTelegramSuggestionFromList,
+    createTelegramListWithFreeTextSupport
 }
